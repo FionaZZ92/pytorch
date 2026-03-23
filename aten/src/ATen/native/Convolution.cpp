@@ -1275,17 +1275,17 @@ static ConvBackend _select_conv_backend(
   if (params.is_depthwise(input, weight)) {
     if (params.use_cudnn_depthwise(input, weight)) {
       return ConvBackend::Cudnn;
+    //} else if (params.use_miopen(input, weight, bias_sizes_opt.has_value())) {
+    //  return ConvBackend::MiopenDepthwise;
+    } else if (input.ndimension() == 4) {
+      return ConvBackend::CudaDepthwise2d;
+    } else if (input.ndimension() == 5) {
+      return ConvBackend::CudaDepthwise3d;
     } else if (params.use_miopen(input, weight, bias_sizes_opt.has_value())) {
       return ConvBackend::MiopenDepthwise;
     } else {
-      if (input.ndimension() == 4) {
-        return ConvBackend::CudaDepthwise2d;
-      } else if (input.ndimension() == 5) {
-        return ConvBackend::CudaDepthwise3d;
-      } else {
         // unsupported
       }
-    }
   } else if (params.use_cudnn(input, weight)) {
     if (params.transposed) {
       return ConvBackend::CudnnTranspose;
@@ -1774,10 +1774,6 @@ std::tuple<Tensor, Tensor, Tensor> convolution_backward_overrideable(
         IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation,
         bool transposed, IntArrayRef output_padding, int64_t groups, std::array<bool, 3> output_mask) {
    TORCH_CHECK_NOT_IMPLEMENTED(false, "convolution_backward_overrideable: You are likely triggering this with tensor backend other than CPU/CUDA/MKLDNN, if this is intended, please use TORCH_LIBRARY_IMPL to override this function ");
-  return std::tuple<Tensor, Tensor, Tensor>(
-          at::empty_like(input, LEGACY_CONTIGUOUS_MEMORY_FORMAT),
-          at::empty_like(weight, LEGACY_CONTIGUOUS_MEMORY_FORMAT),
-          at::empty({}));
 }
 
 static Tensor subvariable(const Tensor& var, int64_t dim, int64_t groups, int64_t g) {
